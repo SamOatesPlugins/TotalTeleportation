@@ -40,14 +40,18 @@ public final class TotalTeleportation extends SamOatesPlugin {
         for (World world : this.getServer().getWorlds()) {
             String key = "spawn." + world.getName().toLowerCase();
             Location defaultSpawn = world.getSpawnLocation();
-            Double x = this.getSetting(key + ".x", defaultSpawn.getX());
-            Double y = this.getSetting(key + ".y", defaultSpawn.getY());
-            Double z = this.getSetting(key + ".z", defaultSpawn.getZ());
-            double yaw = this.getSetting(key + ".yaw", (double)defaultSpawn.getYaw());
-            double pitch = this.getSetting(key + ".pitch", (double)defaultSpawn.getPitch());
             
-            Location spawn = new Location(world, x, y, z, (float)yaw, (float)pitch);
-            m_spawnLocations.put(world.getName().toLowerCase(), spawn);
+            boolean enabled = this.getSetting(key + ".enabled", false);
+            if (enabled) {
+                Double x = this.getSetting(key + ".x", defaultSpawn.getX());
+                Double y = this.getSetting(key + ".y", defaultSpawn.getY());
+                Double z = this.getSetting(key + ".z", defaultSpawn.getZ());
+                double yaw = this.getSetting(key + ".yaw", (double)defaultSpawn.getYaw());
+                double pitch = this.getSetting(key + ".pitch", (double)defaultSpawn.getPitch());
+
+                Location spawn = new Location(world, x, y, z, (float)yaw, (float)pitch);
+                m_spawnLocations.put(world.getName().toLowerCase(), spawn);
+            }
         }
     }
     
@@ -59,6 +63,7 @@ public final class TotalTeleportation extends SamOatesPlugin {
         for (World world : this.getServer().getWorlds()) {
             String key = "spawn." + world.getName().toLowerCase();
             Location spawn = world.getSpawnLocation();
+            this.registerSetting(key + ".enabled", true);
             this.registerSetting(key + ".x", spawn.getX());
             this.registerSetting(key + ".y", spawn.getY());
             this.registerSetting(key + ".z", spawn.getZ());
@@ -77,7 +82,7 @@ public final class TotalTeleportation extends SamOatesPlugin {
         World world = player.getWorld();
         String worldName = world.getName().toLowerCase();
         if (!m_spawnLocations.containsKey(worldName)) {        
-            return world.getSpawnLocation();
+            return null;
         }
         return m_spawnLocations.get(worldName);
     }
@@ -92,6 +97,7 @@ public final class TotalTeleportation extends SamOatesPlugin {
         m_spawnLocations.put(worldName, location);
         
         String key = "spawn." + worldName;
+        this.setSetting(key + ".enabled", true);
         this.setSetting(key + ".x", location.getX());
         this.setSetting(key + ".y", location.getY());
         this.setSetting(key + ".z", location.getZ());

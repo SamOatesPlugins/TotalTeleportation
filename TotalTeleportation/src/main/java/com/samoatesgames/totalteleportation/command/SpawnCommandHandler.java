@@ -43,8 +43,12 @@ public class SpawnCommandHandler extends BasicCommandHandler {
         
         TotalTeleportation plugin = (TotalTeleportation)manager.getPlugin();
         Location spawn = plugin.getSpawn(player);
-        player.teleport(spawn);
+        if (spawn == null) {
+            manager.sendMessage(player, "Teleporting to spawn is disabled in this world.");
+            return true;
+        }
         
+        player.teleport(spawn);
         manager.sendMessage(player, "You have been teleported to the spawn of the world.");
         
         return true;
