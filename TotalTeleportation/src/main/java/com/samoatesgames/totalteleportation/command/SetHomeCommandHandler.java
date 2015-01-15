@@ -10,17 +10,17 @@ import org.bukkit.entity.Player;
  *
  * @author Sam Oates <sam@samoatesgames.com>
  */
-public class SetSpawnCommandHandler extends BasicCommandHandler {
+public class SetHomeCommandHandler extends BasicCommandHandler {
 
     /**
      * Class constructor
      */
-    public SetSpawnCommandHandler() {
-        super("totalteleportation.command.setspawn");
+    public SetHomeCommandHandler() {
+        super("totalteleportation.command.sethome");
     }
     
     /**
-     * Handle the /setspawn command
+     * Handle the /sethome command
      *
      * @param sender
      * @param args
@@ -29,20 +29,25 @@ public class SetSpawnCommandHandler extends BasicCommandHandler {
     public boolean execute(PluginCommandManager manager, CommandSender sender, String[] args) {
 
         if (!manager.hasPermission(sender, this.getPermission())) {
-            manager.sendMessage(sender, "You do not have permission to use /setspawn.");
+            manager.sendMessage(sender, "You do not have permission to use /sethome.");
             return true;
         }
         
         if (!(sender instanceof Player)) {
-            manager.sendMessage(sender, "Only players can use the /setspawn command.");
+            manager.sendMessage(sender, "Only players can use the /sethome command.");
             return true;
         }
         
-        Player player = (Player)sender;
-        
+        Player player = (Player)sender;        
         TotalTeleportation plugin = (TotalTeleportation)manager.getPlugin();
-        plugin.setSpawn(player.getLocation());
-        manager.sendMessage(player, "You have set the spawn of the world to your current location.");
+
+        String playerName = player.getName();
+        if (args.length == 1 && manager.hasPermission(sender, this.getPermission() + ".other")) {
+            playerName = args[0];
+        }
+        
+        plugin.setHome(playerName, player.getLocation());
+        manager.sendMessage(player, "You have set the home location for " + playerName + ".");
         
         return true;
     }

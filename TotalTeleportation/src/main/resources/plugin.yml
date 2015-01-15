@@ -1,6 +1,6 @@
 name: TotalTeleportation
 main: com.samoatesgames.totalteleportation.TotalTeleportation
-version: 1.0
+version: 1.1
 authors: [SamOatesPlugins]
 description: A teleportation plugin.
 
@@ -9,5 +9,11 @@ commands:
         description: Teleport a player to spawn
         usage: /<command>
     setspawn:
-        description: Teleport a player to spawn
+        description: Set the spawn to a players current location
+        usage: /<command>
+    home:
+        description: Teleport a player to their home
+        usage: /<command>
+    sethome:
+        description: Set a players home to their current location
         usage: /<command>

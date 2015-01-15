@@ -1,10 +1,14 @@
 package com.samoatesgames.totalteleportation;
 
 import com.samoatesgames.samoatesplugincore.plugin.SamOatesPlugin;
+import com.samoatesgames.totalteleportation.command.HomeCommandHandler;
+import com.samoatesgames.totalteleportation.command.SetHomeCommandHandler;
 import com.samoatesgames.totalteleportation.command.SetSpawnCommandHandler;
 import com.samoatesgames.totalteleportation.command.SpawnCommandHandler;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -22,6 +26,11 @@ public final class TotalTeleportation extends SamOatesPlugin {
     private Map<String, Location> m_spawnLocations = new HashMap<String, Location>();
     
     /**
+     * 
+     */
+    private Map<String, Location> m_homeLocations = new HashMap<String, Location>();
+    
+    /**
      * Class constructor
      */
     public TotalTeleportation() {
@@ -36,6 +45,8 @@ public final class TotalTeleportation extends SamOatesPlugin {
         super.onEnable();
         m_commandManager.registerCommandHandler("spawn", new SpawnCommandHandler());        
         m_commandManager.registerCommandHandler("setspawn", new SetSpawnCommandHandler());
+        m_commandManager.registerCommandHandler("home", new HomeCommandHandler());        
+        m_commandManager.registerCommandHandler("sethome", new SetHomeCommandHandler());
         
         for (World world : this.getServer().getWorlds()) {
             String key = "spawn." + world.getName().toLowerCase();
@@ -104,5 +115,30 @@ public final class TotalTeleportation extends SamOatesPlugin {
         this.setSetting(key + ".yaw", (double)location.getYaw());
         this.setSetting(key + ".pitch", (double)location.getPitch());
         this.saveSettings();
+    }
+    
+    /**
+     * 
+     * @param playerName
+     * @return 
+     */
+    public Location getHome(String playerName) {
+        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+        if (!m_homeLocations.containsKey(uuid.toString())) {
+            return null;
+        }
+        return m_homeLocations.get(uuid.toString());        
+    }
+    
+    /**
+     * 
+     * @param playerName
+     * @param location 
+     */
+    public void setHome(String playerName, Location location) {
+        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+        m_homeLocations.put(uuid.toString(), location);
+        
+        // TODO Persist data in a database.
     }
 }
