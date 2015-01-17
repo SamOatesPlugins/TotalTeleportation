@@ -5,6 +5,8 @@ import com.samoatesgames.totalteleportation.command.HomeCommandHandler;
 import com.samoatesgames.totalteleportation.command.SetHomeCommandHandler;
 import com.samoatesgames.totalteleportation.command.SetSpawnCommandHandler;
 import com.samoatesgames.totalteleportation.command.SpawnCommandHandler;
+import com.samoatesgames.totalteleportation.data.PlayerHome;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -13,6 +15,9 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import uk.thecodingbadgers.bDatabaseManager.Database.BukkitDatabase;
+import uk.thecodingbadgers.bDatabaseManager.DatabaseTable.DatabaseTable;
+import uk.thecodingbadgers.bDatabaseManager.bDatabaseManager;
 
 /**
  * The main plugin class
@@ -28,7 +33,17 @@ public final class TotalTeleportation extends SamOatesPlugin {
     /**
      * 
      */
-    private Map<String, Location> m_homeLocations = new HashMap<String, Location>();
+    private Map<String, PlayerHome> m_homeLocations = new HashMap<String, PlayerHome>();
+    
+    /**
+     * 
+     */
+    private BukkitDatabase m_database = null;
+    
+    /**
+     * 
+     */
+    private DatabaseTable m_homesTable = null;
     
     /**
      * Class constructor
@@ -47,7 +62,7 @@ public final class TotalTeleportation extends SamOatesPlugin {
         m_commandManager.registerCommandHandler("setspawn", new SetSpawnCommandHandler());
         m_commandManager.registerCommandHandler("home", new HomeCommandHandler());        
         m_commandManager.registerCommandHandler("sethome", new SetHomeCommandHandler());
-        
+                
         for (World world : this.getServer().getWorlds()) {
             String key = "spawn." + world.getName().toLowerCase();
             Location defaultSpawn = world.getSpawnLocation();
@@ -64,12 +79,53 @@ public final class TotalTeleportation extends SamOatesPlugin {
                 m_spawnLocations.put(world.getName().toLowerCase(), spawn);
             }
         }
+        
+        m_database = bDatabaseManager.createDatabase(this.getSetting("database.database", "my_database"), this, bDatabaseManager.DatabaseType.SQL);
+        if (!m_database.login(
+            this.getSetting("database.host", "localhost"), 
+            this.getSetting("database.username", "user"), 
+            this.getSetting("database.password", "password"), 
+            this.getSetting("database.port", 3306))) 
+        {
+            this.logError("Failed to connect to database!");
+        }
+        else
+        {
+            m_homesTable = m_database.createTable("TotalTP_Homes", PlayerHome.class);
+            ResultSet loadedData = m_homesTable.selectAll();
+            try {
+                while (loadedData.next()) {                    
+                    String worldName = loadedData.getString("WorldName");
+                    String userID = loadedData.getString("Owner");
+                    double x = loadedData.getDouble("X");
+                    double y = loadedData.getDouble("Y");
+                    double z = loadedData.getDouble("Z");
+                    double yaw = loadedData.getDouble("Yaw");
+                    double pitch = loadedData.getDouble("Pitch");
+                    
+                    World world = this.getServer().getWorld(worldName);
+                    if (world != null) {
+                        Location location = new Location(world, x, y, z, (float)yaw, (float)pitch);                    
+                        PlayerHome home = new PlayerHome(userID, location);
+                        m_homeLocations.put(userID, home);
+                    }
+                }
+            } catch (Exception ex) {
+                this.logException("Failed to load home data from database", ex);
+            }
+        }
     }
     
     /**
      * Register all configuration settings
      */
     public void setupConfigurationSettings() {
+        
+        this.registerSetting("database.host", "localhost");
+        this.registerSetting("database.port", 3306);
+        this.registerSetting("database.database", "my_database");
+        this.registerSetting("database.username", "user");
+        this.registerSetting("database.password", "password");
         
         for (World world : this.getServer().getWorlds()) {
             String key = "spawn." + world.getName().toLowerCase();
@@ -127,7 +183,7 @@ public final class TotalTeleportation extends SamOatesPlugin {
         if (!m_homeLocations.containsKey(uuid.toString())) {
             return null;
         }
-        return m_homeLocations.get(uuid.toString());        
+        return m_homeLocations.get(uuid.toString()).toLocation();        
     }
     
     /**
@@ -137,8 +193,18 @@ public final class TotalTeleportation extends SamOatesPlugin {
      */
     public void setHome(String playerName, Location location) {
         UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-        m_homeLocations.put(uuid.toString(), location);
+
+        if (m_homeLocations.containsKey(uuid.toString())) {
+            m_homeLocations.remove(uuid.toString());
+        }
         
-        // TODO Persist data in a database.
+        PlayerHome home = new PlayerHome(uuid.toString(), location);
+        m_homeLocations.put(uuid.toString(), home);
+        
+        if (m_homesTable == null) {
+            this.logError("Database is not setup. Data will not persist.");
+        } else {
+            m_homesTable.update(home, "`Owner`='" + uuid.toString() + "'", false);
+        }
     }
 }
